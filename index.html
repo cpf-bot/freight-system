@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>货代询价记录系统 - 专业版</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 添加记录卡片 -->
+        <div class="card">
+            <h1>📦 货代询价记录系统</h1>
+            <div class="subtitle">专业版 - 支持报价管理</div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>客户名称 <span class="required">*</span></label>
+                    <input type="text" id="customerName" placeholder="例：某某进出口有限公司">
+                </div>
+                <div class="form-group">
+                    <label>询价日期 <span class="required">*</span></label>
+                    <input type="date" id="inquiryDate">
+                </div>
+                <div class="form-group">
+                    <label>启运港 <span class="required">*</span></label>
+                    <input type="text" id="pol" placeholder="例：上海港">
+                </div>
+                <div class="form-group">
+                    <label>目的港 <span class="required">*</span></label>
+                    <input type="text" id="pod" placeholder="例：洛杉矶港">
+                </div>
+                <div class="form-group">
+                    <label>运输方式 <span class="required">*</span></label>
+                    <select id="transportMode" onchange="toggleContainerType()">
+                        <option value="海运">🚢 海运</option>
+                        <option value="空运">✈️ 空运</option>
+                        <option value="陆运">🚛 陆运</option>
+                        <option value="铁路">🚆 铁路</option>
+                    </select>
+                </div>
+                <div class="form-group" id="containerTypeGroup" style="display:none;">
+                    <label>柜型</label>
+                    <select id="containerType">
+                        <option value="拼箱">拼箱 (LCL)</option>
+                        <option value="20HQ">20HQ 整柜</option>
+                        <option value="40HQ">40HQ 整柜</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>货品名称</label>
+                    <input type="text" id="goodsName" placeholder="例：电子产品">
+                </div>
+                <div class="form-group">
+                    <label>尺寸 (cm)</label>
+                    <input type="text" id="dimensions" placeholder="例：50x40x30">
+                </div>
+                <div class="form-group">
+                    <label>重量 (kg)</label>
+                    <input type="number" id="weight" step="0.1" placeholder="重量">
+                </div>
+                <div class="form-group">
+                    <label>货好时间</label>
+                    <input type="date" id="readyDate">
+                </div>
+                <div class="form-group">
+                    <label>海关编码 (HS Code)</label>
+                    <input type="text" id="hsCode" placeholder="例：84713000">
+                </div>
+                <div class="form-group">
+                    <label>是否危险品</label>
+                    <div class="dangerous-group">
+                        <label><input type="radio" name="dangerous" value="否" checked> 否</label>
+                        <label><input type="radio" name="dangerous" value="是"> 是</label>
+                    </div>
+                </div>
+                <div class="form-group full-width">
+                    <label>业务条款</label>
+                    <textarea id="terms" placeholder="例：EXW/FOB/CIF等贸易条款，付款方式，特殊要求..."></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <label>备注/特殊要求</label>
+                    <textarea id="remarks" placeholder="其他备注信息..."></textarea>
+                </div>
+            </div>
+            <button class="btn" onclick="addRecord()">+ 添加询价记录</button>
+            <button class="btn btn-success" onclick="copyInquiryToClipboard()">📋 复制询价信息（文字版）</button>
+        </div>
+
+        <!-- 筛选统计卡片 -->
+        <div class="card">
+            <div class="filter-bar">
+                <div class="filter-item">
+                    <label>🔍 搜索客户</label>
+                    <input type="text" id="searchInput" placeholder="客户名称" oninput="renderRecords()">
+                </div>
+                <div class="filter-item">
+                    <label>🚢 运输方式</label>
+                    <select id="modeFilter" onchange="renderRecords()">
+                        <option value="all">全部</option>
+                        <option value="海运">海运</option>
+                        <option value="空运">空运</option>
+                        <option value="陆运">陆运</option>
+                        <option value="铁路">铁路</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>⚠️ 危险品</label>
+                    <select id="dangerousFilter" onchange="renderRecords()">
+                        <option value="all">全部</option>
+                        <option value="是">是</option>
+                        <option value="否">否</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="stats-grid" id="stats"></div>
+            
+            <div class="export-bar" style="margin-top:16px;">
+                <button class="btn-secondary" onclick="exportToCSV()">📎 导出CSV</button>
+                <button class="btn-secondary" onclick="exportBackup()">💾 备份数据</button>
+                <button class="btn-secondary" onclick="importBackup()">📁 恢复备份</button>
+            </div>
+        </div>
+
+        <!-- 记录列表卡片 -->
+        <div class="card">
+            <h3 style="margin-bottom: 16px;">📋 询价记录列表</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日期</th><th>客户名称</th><th>启运港</th><th>目的港</th><th>运输方式</th>
+                            <th>柜型</th><th>货品</th><th>重量</th><th>危险品</th><th>报价</th><th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsBody">
+                        <tr><td colspan="11" style="text-align:center">加载中......</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 报价模态框 -->
+    <div id="quoteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>💰 添加/修改报价</h3>
+                <span class="close" onclick="closeQuoteModal()">&times;</span>
+            </div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- 查看报价模态框 -->
+    <div id="viewQuoteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📄 报价详情</h3>
+                <span class="close" onclick="closeViewQuoteModal()">&times;</span>
+            </div>
+            <div id="viewQuoteBody" class="view-quote-content"></div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-success" id="copyQuoteBtn">📋 复制报价给客户</button>
+                <button class="btn" onclick="editFromView()">✏️ 修改报价</button>
+                <button class="btn-secondary" onclick="closeViewQuoteModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS 文件引入（顺序很重要） -->
+    <script src="script.js"></script>
+    <script src="quote.js"></script>
+    <script src="actions.js"></script>
+
+    <script>
+        // 页面初始化
+        document.getElementById('copyQuoteBtn').addEventListener('click', copyQuoteToClipboard);
+
+        window.onclick = function(event) {
+            if (event.target === document.getElementById('quoteModal')) {
+                closeQuoteModal();
+            }
+            if (event.target === document.getElementById('viewQuoteModal')) {
+                closeViewQuoteModal();
+            }
+        };
+
+        initDate();
+        toggleContainerType();
+        renderRecords();
+    </script>
+</body>
+</html>
